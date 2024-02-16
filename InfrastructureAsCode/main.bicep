@@ -1,10 +1,10 @@
-@description('Environment of the web app')
-param environment string = 'dev'
+// @description('Environment of the web app')
+// param environment string = 'dev'
 
 @description('Location of services')
 param location string = resourceGroup().location
 
-var webAppName = '${uniqueString(resourceGroup().id)}-${environment}'
+//var webAppName = '${uniqueString(resourceGroup().id)}-${environment}'
 var appServicePlanName = '${uniqueString(resourceGroup().id)}-mpnp-asp'
 var logAnalyticsName = '${uniqueString(resourceGroup().id)}-mpnp-la'
 var appInsightsName = '${uniqueString(resourceGroup().id)}-mpnp-ai'
@@ -13,7 +13,7 @@ var registryName = '${uniqueString(resourceGroup().id)}mpnpreg'
 var registrySku = 'Standard'
 var imageName = 'techboost/dotnetcoreapp'
 var startupCommand = ''
-
+var environments = ['dev', 'test', 'prod']
 
 resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2021-12-01-preview' = {
   name: logAnalyticsName
@@ -62,8 +62,8 @@ resource appServicePlan 'Microsoft.Web/serverFarms@2020-12-01' = {
   }
 }
 
-resource appServiceApp 'Microsoft.Web/sites@2020-12-01' = {
-  name: webAppName
+resource appServiceApp 'Microsoft.Web/sites@2020-12-01' = [for env in environments :{
+  name: '${uniqueString(resourceGroup().id)}-${env}'
   location: location
   properties: {
     serverFarmId: appServicePlan.id
@@ -98,8 +98,8 @@ resource appServiceApp 'Microsoft.Web/sites@2020-12-01' = {
         ]
       }
     }
-}
+}]
 
-output application_name string = appServiceApp.name
-output application_url string = appServiceApp.properties.hostNames[0]
+// output application_name string = appServiceApp.name
+// output application_url string = appServiceApp.properties.hostNames[0]
 output container_registry_name string = containerRegistry.name
