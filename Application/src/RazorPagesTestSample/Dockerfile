@@ -1,16 +1,23 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-nanoserver-1809 AS base
 WORKDIR /app
+EXPOSE 8080
 
-# Copy csproj and restore as distinct layers
-COPY *.csproj ./
-RUN dotnet restore
+ENV ASPNETCORE_URLS=http://+:80
 
-# Copy everything else and build
-COPY . ./
-RUN dotnet publish -c Release -o out
+FROM mcr.microsoft.com/dotnet/sdk:8.0-nanoserver-1809 AS build
+ARG configuration=Release
+WORKDIR /src
+COPY ["Application/src/RazorPagesTestSample/RazorPagesTestSample.csproj", "Application/src/RazorPagesTestSample/"]
+RUN dotnet restore "Application\src\RazorPagesTestSample\RazorPagesTestSample.csproj"
+COPY . .
+WORKDIR "/src/Application/src/RazorPagesTestSample"
+RUN dotnet build "RazorPagesTestSample.csproj" -c $configuration -o /app/build
 
-# Build runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM build AS publish
+ARG configuration=Release
+RUN dotnet publish "RazorPagesTestSample.csproj" -c $configuration -o /app/publish /p:UseAppHost=false
+
+FROM base AS final
 WORKDIR /app
-COPY --from=build-env /app/out .
+COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "RazorPagesTestSample.dll"]
